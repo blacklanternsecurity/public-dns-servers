@@ -12,6 +12,8 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
+max_workers = 5
+min_reliability = 0.99
 nameservers_url = "https://public-dns.info/nameserver/nameservers.json"
 nameservers_json_file = (Path(__file__).parent.parent / "nameservers.json").resolve()
 rand_pool = string.ascii_lowercase
@@ -65,7 +67,7 @@ def download(url):
         errprint(f"Failed to download {url}: {e}")
 
 
-def get_valid_resolvers(nameservers_file, min_reliability=0.99):
+def get_valid_resolvers(nameservers_file):
     nameservers = set()
     nameservers_json = []
     try:
@@ -94,11 +96,11 @@ def verify_nameservers(nameservers):
         f"Verifying {len(nameservers):,} public nameservers. Please be patient, this may take a while."
     )
     futures = []
-    with ThreadPoolExecutor(max_workers=25) as executor:
+    valid_nameservers = set()
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for nameserver in nameservers:
             futures.append(executor.submit(verify_nameserver, nameserver))
 
-        valid_nameservers = set()
         for future in as_completed(futures):
             nameserver, error = future.result()
             if error is None:
@@ -118,7 +120,7 @@ def verify_nameservers(nameservers):
     return valid_nameservers
 
 
-def verify_nameserver(nameserver, timeout=3):
+def verify_nameserver(nameserver, timeout=2):
     """Validate a nameserver by making a sample query and a garbage query
 
     Args:
