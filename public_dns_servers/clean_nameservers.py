@@ -12,7 +12,8 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-max_workers = 5
+max_workers = 2
+dns_timeout = 1
 min_reliability = 0.99
 nameservers_url = "https://public-dns.info/nameserver/nameservers.json"
 nameservers_json_file = (Path(__file__).parent.parent / "nameservers.json").resolve()
@@ -120,18 +121,12 @@ def verify_nameservers(nameservers):
     return valid_nameservers
 
 
-def verify_nameserver(nameserver, timeout=2):
-    """Validate a nameserver by making a sample query and a garbage query
-
-    Args:
-        nameserver (str): nameserver to verify
-        timeout (int): timeout for dns query
-    """
+def verify_nameserver(nameserver):
     error = None
 
     resolver = dns.resolver.Resolver()
-    resolver.timeout = timeout
-    resolver.lifetime = timeout
+    resolver.timeout = dns_timeout
+    resolver.lifetime = dns_timeout
     resolver.nameservers = [nameserver]
 
     # first, make sure it can resolve a valid hostname
@@ -141,25 +136,19 @@ def verify_nameserver(nameserver, timeout=2):
         if not ("2001:4860:4860::8888" in aaaa_results and "8.8.8.8" in a_results):
             error = f"Nameserver {nameserver} failed to resolve basic query"
     except Exception:
-        error = f"Nameserver {nameserver} failed to resolve basic query within {timeout} seconds"
+        error = f"Nameserver {nameserver} failed to resolve basic query within {dns_timeout} seconds"
 
     # then, make sure it isn't feeding us garbage data
     randhost = (
         f"www-m.{rand_string(9, digits=False)}.{rand_string(10, digits=False)}.com"
     )
-    if error is None:
-        try:
-            a_results = list(resolver.resolve(randhost, "A"))
-            error = f"Nameserver {nameserver} returned garbage data"
-        except dns.exception.DNSException:
-            pass
-            # Garbage query to nameserver failed successfully ;)
-    if error is None:
-        try:
-            aaaa_results = list(resolver.resolve(randhost, "AAAA"))
-            error = f"Nameserver {nameserver} returned garbage data"
-        except dns.exception.DNSException:
-            pass
+    for rdtype in ("A", "AAAA"):
+        if error is None:
+            try:
+                results = list(resolver.resolve(randhost, rdtype))
+                error = f"Nameserver {nameserver} returned garbage data"
+            except dns.exception.DNSException:
+                pass
             # Garbage query to nameserver failed successfully ;)
 
     return nameserver, error
