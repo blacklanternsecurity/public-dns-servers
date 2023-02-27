@@ -38,7 +38,7 @@ jobs:
           pip install poetry
           poetry install
       - name: Refresh nameservers.json
-        run: poetry run python clean_nameservers.py
+        run: poetry run python public_dns_servers/clean_nameservers.py
       - name: git add nameservers.json
         uses: EndBug/add-and-commit@v9
         with:
