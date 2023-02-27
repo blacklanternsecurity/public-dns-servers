@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 nameservers_url = "https://public-dns.info/nameserver/nameservers.json"
-nameservers_json_file = (Path(__file__).parent / "nameservers.json").resolve()
+nameservers_json_file = (Path(__file__).parent.parent / "nameservers.json").resolve()
 rand_pool = string.ascii_lowercase
 rand_pool_digits = rand_pool + string.digits
 
@@ -89,18 +89,12 @@ def get_valid_resolvers(nameservers_file, min_reliability=0.99):
     return resolver_list
 
 
-def verify_nameservers(nameservers, timeout=3):
-    """Check each resolver to make sure it can actually resolve DNS names
-
-    Args:
-        nameservers (list): nameservers to verify
-        timeout (int): timeout for dns query
-    """
+def verify_nameservers(nameservers):
     errprint(
         f"Verifying {len(nameservers):,} public nameservers. Please be patient, this may take a while."
     )
     futures = []
-    with ThreadPoolExecutor(max_workers=1000) as executor:
+    with ThreadPoolExecutor(max_workers=100) as executor:
         for nameserver in nameservers:
             futures.append(executor.submit(verify_nameserver, nameserver))
 
@@ -124,7 +118,7 @@ def verify_nameservers(nameservers, timeout=3):
     return valid_nameservers
 
 
-def verify_nameserver(nameserver, timeout=2):
+def verify_nameserver(nameserver, timeout=3):
     """Validate a nameserver by making a sample query and a garbage query
 
     Args:
