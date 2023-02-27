@@ -145,7 +145,7 @@ def verify_nameserver(nameserver):
     for rdtype in ("A", "AAAA"):
         if error is None:
             try:
-                results = list(resolver.resolve(randhost, rdtype))
+                list(resolver.resolve(randhost, rdtype))
                 error = f"Nameserver {nameserver} returned garbage data"
             except dns.exception.DNSException:
                 pass
