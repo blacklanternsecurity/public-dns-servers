@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "public-dns-servers"
+version = "0.1.0"
+description = ""
+authors = ["TheTechromancer"]
+license = "GPL-3.0"
+readme = "README.md"
+packages = [{include = "public_dns_servers"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.28.2"
+dnspython = "^2.3.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
