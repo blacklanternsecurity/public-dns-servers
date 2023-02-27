@@ -94,26 +94,26 @@ def verify_nameservers(nameservers):
         f"Verifying {len(nameservers):,} public nameservers. Please be patient, this may take a while."
     )
     futures = []
-    with ThreadPoolExecutor(max_workers=100) as executor:
+    with ThreadPoolExecutor(max_workers=25) as executor:
         for nameserver in nameservers:
             futures.append(executor.submit(verify_nameserver, nameserver))
 
-    valid_nameservers = set()
-    for future in as_completed(futures):
-        nameserver, error = future.result()
-        if error is None:
-            errprint(f'Nameserver "{nameserver}" is valid')
-            valid_nameservers.add(nameserver)
+        valid_nameservers = set()
+        for future in as_completed(futures):
+            nameserver, error = future.result()
+            if error is None:
+                errprint(f'Nameserver "{nameserver}" is valid')
+                valid_nameservers.add(nameserver)
+            else:
+                errprint(str(error))
+        if not valid_nameservers:
+            errprint(
+                "Unable to reach any nameservers. Please check your internet connection and ensure that DNS is not blocked outbound."
+            )
         else:
-            errprint(str(error))
-    if not valid_nameservers:
-        errprint(
-            "Unable to reach any nameservers. Please check your internet connection and ensure that DNS is not blocked outbound."
-        )
-    else:
-        errprint(
-            f"Successfully verified {len(valid_nameservers):,}/{len(nameservers):,} nameservers"
-        )
+            errprint(
+                f"Successfully verified {len(valid_nameservers):,}/{len(nameservers):,} nameservers"
+            )
 
     return valid_nameservers
 
@@ -125,7 +125,6 @@ def verify_nameserver(nameserver, timeout=3):
         nameserver (str): nameserver to verify
         timeout (int): timeout for dns query
     """
-    errprint(f'Verifying nameserver "{nameserver}"')
     error = None
 
     resolver = dns.resolver.Resolver()
@@ -155,7 +154,7 @@ def verify_nameserver(nameserver, timeout=3):
             # Garbage query to nameserver failed successfully ;)
     if error is None:
         try:
-            a_results = list(resolver.resolve(randhost, "AAAA"))
+            aaaa_results = list(resolver.resolve(randhost, "AAAA"))
             error = f"Nameserver {nameserver} returned garbage data"
         except dns.exception.DNSException:
             pass
@@ -171,6 +170,7 @@ def main():
         if not valid_resolvers:
             errprint(f"No valid nameservers retrieved")
             return
+        valid_resolvers = sorted(valid_resolvers)
         with open(nameservers_json_file, "w") as f:
             json.dump(
                 {
