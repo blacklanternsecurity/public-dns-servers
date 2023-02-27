@@ -11,3 +11,5 @@ The purpose of this repository is to keep an up-to-date list of the latest **KNO
 - Compiles the worthy nameservers into `nameservers.json`
 
 The result is a list that's suitable to be used for any automated task, whether it be OSINT or otherwise. Enjoy!
+
+Used by [BBOT](https://github.com/blacklanternsecurity/bbot)'s [massdns module](https://github.com/blacklanternsecurity/bbot/blob/stable/bbot/modules/massdns.py).
