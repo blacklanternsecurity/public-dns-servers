@@ -8,7 +8,6 @@ import ipaddress
 import dns.resolver
 import dns.exception
 from pathlib import Path
-from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -16,7 +15,7 @@ max_workers = 2
 dns_timeout = 1
 min_reliability = 0.99
 nameservers_url = "https://public-dns.info/nameserver/nameservers.json"
-nameservers_json_file = (Path(__file__).parent.parent / "nameservers.json").resolve()
+nameservers_txt_file = (Path(__file__).parent.parent / "nameservers.txt").resolve()
 rand_pool = string.ascii_lowercase
 rand_pool_digits = rand_pool + string.digits
 
@@ -134,9 +133,9 @@ def verify_nameserver(nameserver):
         a_results = [str(r) for r in list(resolver.resolve("dns.google", "A"))]
         aaaa_results = [str(r) for r in list(resolver.resolve("dns.google", "AAAA"))]
         if not ("2001:4860:4860::8888" in aaaa_results and "8.8.8.8" in a_results):
-            error = f"Nameserver {nameserver} failed to resolve basic query"
+            error = f'Nameserver "{nameserver}" failed to resolve basic query'
     except Exception:
-        error = f"Nameserver {nameserver} failed to resolve basic query within {dns_timeout} seconds"
+        error = f'Nameserver "{nameserver}" failed to resolve basic query within {dns_timeout} seconds'
 
     # then, make sure it isn't feeding us garbage data
     randhost = (
@@ -158,19 +157,13 @@ def main():
     public_dns_info_file = download(nameservers_url)
     if public_dns_info_file is not None:
         valid_resolvers = get_valid_resolvers(public_dns_info_file)
-        if not valid_resolvers:
-            errprint(f"No valid nameservers retrieved")
+        if len(valid_resolvers) < 1000:
+            errprint(f"Not enough nameservers retrieved")
             return
         valid_resolvers = sorted(valid_resolvers)
-        with open(nameservers_json_file, "w") as f:
-            json.dump(
-                {
-                    "last_updated": datetime.now().isoformat(),
-                    "nameservers": list(valid_resolvers),
-                },
-                f,
-                indent=4,
-            )
+        with open(nameservers_txt_file, "w") as f:
+            for v in valid_resolvers:
+                f.write(f"{v}\n")
 
 
 if __name__ == "__main__":
