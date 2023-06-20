@@ -11,7 +11,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-max_workers = 1
+max_workers = 2
 dns_timeout = 1
 min_reliability = 0.99
 nameservers_url = "https://public-dns.info/nameserver/nameservers.json"
