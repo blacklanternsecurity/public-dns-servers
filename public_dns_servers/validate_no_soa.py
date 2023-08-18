@@ -32,8 +32,7 @@ def do_validate_no_soa_tolerance(nameserver):
         dns.resolver.LifetimeTimeout,
         dns.resolver.NoAnswer,
         dns.resolver.NXDOMAIN,
-    ) as e:
-        errprint(f"Resolver {nameserver} failed check")
+    ):
         valid = False
 
     return nameserver, valid
