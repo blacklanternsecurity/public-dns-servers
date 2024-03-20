@@ -1,0 +1,29 @@
+name: Nameservers File Monitor and Test for Missing SOA
+
+on:
+  push:
+    paths:
+      - 'nameservers.txt'
+  workflow_dispatch:
+
+jobs:
+  refresh_nameservers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      - name: Test validated nameserver for missing SOA tolerance
+        run: poetry run python public_dns_servers/validate_no_soa.py
+      - name: git add nameservers-no_soa_friendly.txt
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: "nameservers-no_soa_friendly.txt"
+          default_author: github_actions
+          message: "refresh nameservers-no_soa_friendly.txt"
