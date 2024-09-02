@@ -38,7 +38,8 @@ def main():
                     print(f"Error getting subnet for {ip}: {str(e)}", file=sys.stderr)
                     continue
                 print(
-                    f"Nameserver {nameserver} uses IP {ip} (subnet: {subnet}, ASN: {asn})", file=sys.stderr
+                    f"Nameserver {nameserver} uses IP {ip} (subnet: {subnet}, ASN: {asn})",
+                    file=sys.stderr,
                 )
                 try:
                     asns[asn].add(nameserver)
