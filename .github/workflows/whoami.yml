@@ -17,7 +17,7 @@ jobs:
           python-version: "3.x"
       - name: Install ASN database
         run: |
-          pip install pyasn
+          pip install pyasn dnspython
           pyasn_util_download.py --latestv46
           pyasn_util_convert.py --single rib.*.bz2 asn.db
       - name: Publish stats
