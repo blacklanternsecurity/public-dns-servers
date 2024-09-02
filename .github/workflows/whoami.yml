@@ -1,0 +1,31 @@
+name: Collect stats on DNS servers using whoami.akamai.net
+
+on:
+  push:
+    paths:
+      - 'nameservers.txt'
+  workflow_dispatch:
+
+jobs:
+  file-updated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Install ASN database
+        run: |
+          pip install pyasn
+          python3 pyasn_util_download.py --latestv46
+          python3 pyasn_util_convert.py --single rib.*.bz2 asn.db
+      - name: Publish stats
+        run: |
+          python3 public_dns_servers/whoami.py | tee nameservers_by_asn.json
+      - name: git add nameservers_by_asn.json
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: "nameservers_by_asn.json"
+          default_author: github_actions
+          message: "refresh nameservers_by_asn.json"
