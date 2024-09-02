@@ -45,7 +45,7 @@ def main():
                 except KeyError:
                     asns[asn] = {nameserver}
             else:
-                print(ip)
+                print(ip, file=sys.stderr)
             print(file=sys.stderr)
     finally:
         asns = {k: sorted(v) for k, v in asns.items()}
