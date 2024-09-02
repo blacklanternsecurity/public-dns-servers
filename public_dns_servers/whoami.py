@@ -35,10 +35,10 @@ def main():
                 try:
                     asn, subnet = asndb.lookup(ip)
                 except Exception as e:
-                    print(f"Error getting subnet for {ip}: {str(e)}")
+                    print(f"Error getting subnet for {ip}: {str(e)}", file=sys.stderr)
                     continue
                 print(
-                    f"Nameserver {nameserver} uses IP {ip} (subnet: {subnet}, ASN: {asn})"
+                    f"Nameserver {nameserver} uses IP {ip} (subnet: {subnet}, ASN: {asn})", file=sys.stderr
                 )
                 try:
                     asns[asn].add(nameserver)
