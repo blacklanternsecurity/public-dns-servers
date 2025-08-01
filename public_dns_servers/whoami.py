@@ -2,7 +2,6 @@ import sys
 import json
 import dns.resolver
 import pyasn
-import ipaddress
 
 
 def query_dns(nameserver, domain):
