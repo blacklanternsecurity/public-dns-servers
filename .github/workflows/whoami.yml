@@ -1,20 +1,43 @@
 name: Collect stats on DNS servers using whoami.akamai.net
 
+# This previously triggered on `push` to nameservers.txt. That never fired:
+# nameservers.txt is only ever written by the refresh job, and pushes made with
+# GITHUB_TOKEN do not trigger workflows. As a result nameservers_by_asn.json
+# went stale from 2024-09 onward. Chain off the refresh workflow instead.
+
 on:
-  push:
-    paths:
-      - 'nameservers.txt'
+  workflow_run:
+    workflows: ["refresh nameservers"]
+    types: [completed]
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: whoami-asn-stats
+  cancel-in-progress: false
 
 jobs:
   file-updated:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
+    # Don't bother computing stats if the refresh itself failed.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v7
         with:
-          python-version: "3.x"
+          # On workflow_run, the default checkout can resolve to the commit that
+          # started the *refresh* run, i.e. before nameservers.txt was updated.
+          # Pin to the branch so we read the freshly-committed list and so
+          # add-and-commit has a real branch to push back to.
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
       - name: Install ASN database
         run: |
           pip install pyasn dnspython
@@ -24,7 +47,7 @@ jobs:
         run: |
           python3 public_dns_servers/whoami.py | tee nameservers_by_asn.json
       - name: git add nameservers_by_asn.json
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@v10
         with:
           add: "nameservers_by_asn.json"
           default_author: github_actions
