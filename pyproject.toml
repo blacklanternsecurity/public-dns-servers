@@ -9,8 +9,12 @@ packages = [{include = "public_dns_servers"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-requests = "^2.28.2"
-dnspython = "^2.3.0"
+# Floors raised past the advisories that were open against the old lock
+# (requests GHSA-j8r2-6x86-q33q / -9wx4-h78v-vm56 / -9hjg-9r4m-mvj7 / -gc5v-m9x4-r6x2,
+# dnspython GHSA-3rq5-2g8h-59hc). Transitive urllib3/certifi/idna are held at
+# patched versions by poetry.lock, which is what CI installs from.
+requests = "^2.34.2"
+dnspython = "^2.8.0"
 
 
 [build-system]

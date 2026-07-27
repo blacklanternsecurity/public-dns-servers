@@ -1,0 +1,42 @@
+name: refresh nameservers
+
+# Deliberately independent of the lint/test pipeline. This job used to live in
+# tests.yml behind `needs: lint`, so an unrelated formatting failure silently
+# blocked the weekly data refresh for six months. Data collection must not be
+# gated on code style.
+
+on:
+  schedule:
+    # At 12:55 every Saturday
+    - cron: "55 12 * * 6"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-nameservers
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      - name: Refresh nameservers.txt
+        run: poetry run python public_dns_servers/clean_nameservers.py
+      - name: git add nameservers.txt
+        uses: EndBug/add-and-commit@v10
+        with:
+          add: "nameservers.txt"
+          default_author: github_actions
+          message: "refresh nameservers.txt"
