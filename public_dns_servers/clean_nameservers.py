@@ -1,5 +1,6 @@
 import dns
 import sys
+import time
 import json
 import random
 import string
@@ -12,6 +13,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 max_workers = 10
 dns_timeout = 1
+download_timeout = 30
+download_retries = 3
+download_retry_delay = 5
 min_reliability = 0.99
 nameservers_url = "https://public-dns.info/nameserver/nameservers.json"
 nameservers_txt_file = (Path(__file__).parent.parent / "nameservers.txt").resolve()
@@ -52,18 +56,26 @@ def download(url):
     """
     filename = Path.home() / ".cache" / "public-dns-servers" / "public_dns_servers.json"
     filename.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with requests.get(url, stream=True) as response:
-            status_code = getattr(response, "status_code", 0)
-            errprint(f"Download result: HTTP {status_code}")
-            if status_code != 0:
+    for attempt in range(1, download_retries + 1):
+        try:
+            with requests.get(url, stream=True, timeout=download_timeout) as response:
+                errprint(f"Download result: HTTP {response.status_code}")
                 response.raise_for_status()
                 with open(filename, "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         f.write(chunk)
-        return filename.resolve()
-    except Exception as e:
-        errprint(f"Failed to download {url}: {e}")
+            return filename.resolve()
+        except Exception as e:
+            # str(e) is empty for some connection errors, which printed as a
+            # bare trailing colon, so name the exception type as well
+            errprint(
+                f"Failed to download {url} "
+                f"(attempt {attempt}/{download_retries}): "
+                f"{e.__class__.__name__}: {e}"
+            )
+            if attempt < download_retries:
+                time.sleep(download_retry_delay)
+    return None
 
 
 def get_valid_resolvers(nameservers_file):
@@ -153,16 +165,25 @@ def verify_nameserver(nameserver):
 
 
 def main():
+    # Both failure paths below exit non-zero on purpose. They used to return
+    # quietly, so a run that downloaded nothing -- or verified too few servers
+    # to trust -- finished green with nameservers.txt untouched, which is
+    # indistinguishable from a run that worked.
     public_dns_info_file = download(nameservers_url)
-    if public_dns_info_file is not None:
-        valid_resolvers = get_valid_resolvers(public_dns_info_file)
-        if len(valid_resolvers) < 1000:
-            errprint(f"Not enough nameservers retrieved")
-            return
-        valid_resolvers = sorted(valid_resolvers)
-        with open(nameservers_txt_file, "w") as f:
-            for v in valid_resolvers:
-                f.write(f"{v}\n")
+    if public_dns_info_file is None:
+        sys.exit(
+            f"Giving up after {download_retries} attempts to download {nameservers_url}"
+        )
+    valid_resolvers = get_valid_resolvers(public_dns_info_file)
+    if len(valid_resolvers) < 1000:
+        sys.exit(
+            f"Only {len(valid_resolvers):,} nameservers verified; "
+            f"refusing to overwrite {nameservers_txt_file.name}"
+        )
+    valid_resolvers = sorted(valid_resolvers)
+    with open(nameservers_txt_file, "w") as f:
+        for v in valid_resolvers:
+            f.write(f"{v}\n")
 
 
 if __name__ == "__main__":
