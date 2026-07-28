@@ -36,6 +36,13 @@ def main():
                 except Exception as e:
                     print(f"Error getting subnet for {ip}: {str(e)}", file=sys.stderr)
                     continue
+                # lookup() returns (None, None) for addresses that aren't in the
+                # RIB rather than raising, so the except above never catches it.
+                # Letting None become a dict key makes the json.dumps() below
+                # blow up on sort_keys, which empties the output file.
+                if asn is None:
+                    print(f"No ASN found for {ip}", file=sys.stderr)
+                    continue
                 print(
                     f"Nameserver {nameserver} uses IP {ip} (subnet: {subnet}, ASN: {asn})",
                     file=sys.stderr,

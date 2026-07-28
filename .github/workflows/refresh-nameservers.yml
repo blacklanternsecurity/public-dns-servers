@@ -21,7 +21,8 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # ~80 min expected at max_workers=10; headroom for a slow week
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v7
       - name: Set up Python
