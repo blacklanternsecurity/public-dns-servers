@@ -3,7 +3,7 @@ name = "public-dns-servers"
 version = "0.1.0"
 description = ""
 authors = ["TheTechromancer"]
-license = "GPL-3.0"
+license = "AGPL-3.0"
 readme = "README.md"
 packages = [{include = "public_dns_servers"}]
 
